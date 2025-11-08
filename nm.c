@@ -1,6 +1,6 @@
 #include "nm.h"
-#include <stdlib.h> //  abs()
-
+#include <stdlib.h> 
+#include <string.h> 
 // 队列 (list) 的最大容量
 #define MAX_BOARDS 100000
 
@@ -225,4 +225,128 @@ board randfill(int n)
 
 void test(void)
 {
+    board b;
+    pair p;
+    bool result;
+
+    // 一个辅助宏，用于在每次测试前清空棋盘 (将所有格子设为 0)
+    #define CLEAR_BOARD() memset(&b, 0, sizeof(board))
+
+    // --- Test 1: 简单相邻 (水平, 相同值) ---
+    CLEAR_BOARD();
+    b.cells[0][0] = 5;
+    b.cells[0][1] = 5;
+    p = (pair){0,0, 1,0};
+    result = take(&b, p);
+    assert(result == true); // 应该成功
+    assert(b.cells[0][0] == 0); // 应该被移除
+    assert(b.cells[0][1] == 0); // 应该被移除
+
+    // --- Test 2: 简单相邻 (垂直, 和为 10) ---
+    CLEAR_BOARD();
+    b.cells[1][1] = 3;
+    b.cells[2][1] = 7;
+    p = (pair){1,1, 1,2};
+    result = take(&b, p);
+    assert(result == true);
+    assert(b.cells[1][1] == 0);
+    assert(b.cells[2][1] == 0);
+
+    // --- Test 3: 简单相邻 (对角线) ---
+    CLEAR_BOARD();
+    b.cells[1][1] = 8;
+    b.cells[2][2] = 8;
+    p = (pair){1,1, 2,2};
+    result = take(&b, p);
+    assert(result == true);
+    assert(b.cells[1][1] == 0);
+    assert(b.cells[2][2] == 0);
+
+    // --- Test 4: "值不匹配" ---
+    CLEAR_BOARD();
+    b.cells[0][0] = 1;
+    b.cells[0][1] = 2; // 1 和 2 既不相等，和也不为 10
+    p = (pair){0,0, 1,0};
+    result = take(&b, p);
+    assert(result == false); // 应该失败
+    assert(b.cells[0][0] == 1); // 应该保持不变
+    assert(b.cells[0][1] == 2); // 应该保持不变
+
+    // --- Test 5: "长距离" (水平, 路径清晰) ---
+    CLEAR_BOARD();
+    b.cells[0][0] = 4;
+    b.cells[0][1] = 0; // 路径是 0 (清晰)
+    b.cells[0][2] = 6;
+    p = (pair){0,0, 2,0};
+    result = take(&b, p);
+    assert(result == true); // 应该成功
+    assert(b.cells[0][0] == 0);
+    assert(b.cells[0][2] == 0);
+
+    // --- Test 6: "长距离" (对角线, 路径清晰) ---
+    CLEAR_BOARD();
+    b.cells[0][0] = 9;
+    b.cells[1][1] = 0; // 清晰
+    b.cells[2][2] = 0; // 清晰
+    b.cells[3][3] = 9;
+    p = (pair){0,0, 3,3};
+    result = take(&b, p);
+    assert(result == true);
+    assert(b.cells[0][0] == 0);
+    assert(b.cells[3][3] == 0);
+
+    // --- Test 7: "路径被阻挡" (水平) ---
+    CLEAR_BOARD();
+    b.cells[0][0] = 4;
+    b.cells[0][1] = 5; // 5 是一个阻挡物!
+    b.cells[0][2] = 6;
+    p = (pair){0,0, 2,0};
+    result = take(&b, p);
+    assert(result == false); // 应该失败
+    assert(b.cells[0][0] == 4); // 应该保持不变
+
+    // --- Test 8: "路径被阻挡" (对角线) ---
+    CLEAR_BOARD();
+    b.cells[0][0] = 9;
+    b.cells[1][1] = 0; // 清晰
+    b.cells[2][2] = 1; // 1 是一个阻挡物!
+    b.cells[3][3] = 9;
+    p = (pair){0,0, 3,3};
+    result = take(&b, p);
+    assert(result == false);
+
+    // --- Test 9: "无效路径" (非直线) ---
+    CLEAR_BOARD();
+    b.cells[0][0] = 7;
+    b.cells[1][2] = 3; // (0,0) 和 (1,2) 不是一条直线
+    p = (pair){0,0, 2,1}; // 坐标错误，(0,0) 和 (2,1)
+    result = take(&b, p);
+    assert(result == false);
+
+    // --- Test 10: "坐标越界" ---
+    CLEAR_BOARD();
+    b.cells[0][0] = 5;
+    p = (pair){0,0, 0, -1}; // y2 是 -1 (越界)
+    result = take(&b, p);
+    assert(result == false);
+    
+    p = (pair){0,0, WIDTH, 0}; // x2 是 WIDTH (5) (越界)
+    result = take(&b, p);
+    assert(result == false);
+
+    // --- Test 11: "坐标相同" ---
+    CLEAR_BOARD();
+    b.cells[0][0] = 5;
+    p = (pair){0,0, 0,0}; // 两个点是同一个
+    result = take(&b, p);
+    assert(result == false);
+
+    // --- Test 12: "匹配空格子" ---
+    CLEAR_BOARD();
+    b.cells[0][0] = 5;
+    b.cells[0][1] = 0; // 这是一个空格子
+    p = (pair){0,0, 1,0}; // 尝试匹配 5 和 0
+    result = take(&b, p);
+    assert(result == false);
+
 }
